@@ -1,0 +1,2 @@
+include ':app', ':lib-compress'
+rootProject.name='CompressUtils'
