@@ -26,6 +26,8 @@ public class CompressUtils {
     private String tempOutFilePath;
     private int outWidth;
     private int outHeight;
+    private int inWidth;
+    private int inHeight;
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -101,6 +103,10 @@ public class CompressUtils {
         return new int[]{outWidth, outHeight};
     }
 
+    public int[] inSize(){
+        return new int[]{inWidth, inHeight};
+    }
+
     public CompressUtils rotate() {
         if (!TextUtils.isEmpty(this.inputFilePath)) {
             if (ImageUtils.getMimeType(this.inputFilePath).equals("image/jpeg")) {
@@ -143,6 +149,8 @@ public class CompressUtils {
         }
         if (w == 0 || h == 0)
             return this;
+        inWidth = w;
+        inHeight = h;
         outWidth = (int) (w / scale);
         outHeight = (int) (h / scale);
         if (scale > 1)
@@ -203,6 +211,8 @@ public class CompressUtils {
         }
         if (w == 0 || h == 0)
             return this;
+        inWidth = w;
+        inHeight = h;
         outWidth = (int) (w / scale);
         outHeight = (int) (h / scale);
         if (scale > 1)
