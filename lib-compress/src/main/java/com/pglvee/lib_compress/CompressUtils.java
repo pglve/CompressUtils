@@ -6,11 +6,8 @@ import android.graphics.Matrix;
 import android.os.Environment;
 import android.text.TextUtils;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -100,7 +97,7 @@ public class CompressUtils {
 
     public CompressUtils rotate() {
         if (!TextUtils.isEmpty(this.inputFilePath)) {
-            if(ImageUtils.getPicType(this.inputFilePath).equals("jpg")){
+            if (ImageUtils.getPicType(this.inputFilePath).equals("jpg")) {
                 angle = ImageUtils.readPictureDegree(this.inputFilePath);
             }
         }
@@ -120,7 +117,9 @@ public class CompressUtils {
     public synchronized CompressUtils image() {
         int w, h;
         float scale;
+        boolean recycle = false;
         if (bitmap == null) {
+            recycle = true;
             BitmapFactory.Options newOpts = new BitmapFactory.Options();
             newOpts.inJustDecodeBounds = true;
             newOpts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -162,13 +161,23 @@ public class CompressUtils {
         }
         new File(tempFile).delete();
         if (!TextUtils.isEmpty(tempInputFilePath)) new File(tempInputFilePath).delete();
+        try {
+            if (recycle && bitmap != null) {
+                bitmap.recycle();
+                bitmap = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return this;
     }
 
     public synchronized CompressUtils thumbnail() {
         int w, h;
         float scale;
+        boolean recycle = false;
         if (bitmap == null) {
+            recycle = true;
             BitmapFactory.Options newOpts = new BitmapFactory.Options();
             newOpts.inJustDecodeBounds = true;
             newOpts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -209,6 +218,14 @@ public class CompressUtils {
             e.printStackTrace();
         }
         if (!TextUtils.isEmpty(tempInputFilePath)) new File(tempInputFilePath).delete();
+        try {
+            if (recycle && bitmap != null) {
+                bitmap.recycle();
+                bitmap = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return this;
     }
 
