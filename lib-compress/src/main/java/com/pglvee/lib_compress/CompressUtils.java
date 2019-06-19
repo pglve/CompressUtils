@@ -24,6 +24,8 @@ public class CompressUtils {
     private Bitmap bitmap;
     private String tempInputFilePath;
     private String tempOutFilePath;
+    private int outWidth;
+    private int outHeight;
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -95,6 +97,10 @@ public class CompressUtils {
         return data;
     }
 
+    public int[] outSize(){
+        return new int[]{outWidth, outHeight};
+    }
+
     public CompressUtils rotate() {
         if (!TextUtils.isEmpty(this.inputFilePath)) {
             if (ImageUtils.getMimeType(this.inputFilePath).equals("image/jpeg")) {
@@ -137,8 +143,10 @@ public class CompressUtils {
         }
         if (w == 0 || h == 0)
             return this;
+        outWidth = (int) (w / scale);
+        outHeight = (int) (h / scale);
         if (scale > 1)
-            bitmap = Bitmap.createScaledBitmap(bitmap, (int) (w / scale), (int) (h / scale), true);
+            bitmap = Bitmap.createScaledBitmap(bitmap, outWidth, outHeight, true);
         if (angle > 0) {
             Matrix matrix = new Matrix();
             matrix.setRotate(angle, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
@@ -195,8 +203,10 @@ public class CompressUtils {
         }
         if (w == 0 || h == 0)
             return this;
+        outWidth = (int) (w / scale);
+        outHeight = (int) (h / scale);
         if (scale > 1)
-            bitmap = Bitmap.createScaledBitmap(bitmap, (int) (w / scale), (int) (h / scale), true);
+            bitmap = Bitmap.createScaledBitmap(bitmap, outWidth, outHeight, true);
         if (angle > 0) {
             Matrix matrix = new Matrix();
             matrix.setRotate(angle, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
