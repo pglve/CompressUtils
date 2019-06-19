@@ -2,12 +2,15 @@ package com.pglvee.lib_compress;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.Environment;
 import android.text.TextUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -20,8 +23,10 @@ public class CompressUtils {
     private int height;
     private int quality;
     private long maxSize;
+    private int angle;
     private Bitmap bitmap;
     private String tempInputFilePath;
+    private String tempOutFilePath;
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -68,7 +73,7 @@ public class CompressUtils {
         File file = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
                 System.currentTimeMillis() + ".jpg");
-        byte2File(data, file);
+        ImageUtils.byte2File(data, file);
         this.tempInputFilePath = file.getPath();
         this.inputFilePath = file.getPath();
         return this;
@@ -84,63 +89,35 @@ public class CompressUtils {
         return this;
     }
 
+    public byte[] dst() {
+        byte[] data = new byte[0];
+        if (!TextUtils.isEmpty(tempOutFilePath)) {
+            data = ImageUtils.file2byte(tempOutFilePath);
+            new File(tempOutFilePath).delete();
+        }
+        return data;
+    }
+
+    public CompressUtils rotate() {
+        if (!TextUtils.isEmpty(this.inputFilePath)) {
+            if(ImageUtils.getPicType(this.inputFilePath).equals("jpg")){
+                angle = ImageUtils.readPictureDegree(this.inputFilePath);
+            }
+        }
+        return this;
+    }
+
+    public CompressUtils rotate(int angle) {
+        this.angle = angle;
+        return this;
+    }
+
     public CompressUtils max(long maxSize) {
         this.maxSize = maxSize;
         return this;
     }
 
-    private int getOptionSample(final float scale) {
-        if (scale < 2) return 1;
-        else if (scale >= 2f && scale < 4f) return 2;
-        else if (scale >= 4f && scale < 8f) return 4;
-        else if (scale >= 8f && scale < 16) return 8;
-        else return 16;
-    }
-
-    private float getOptionScale(int oW, int oH, int w, int h) {
-        if (w == 0 || h == 0 || oW == 0 || oH == 0) return 1f;
-        int ol = Math.max(oW, oH);
-        int s = Math.max(w, h);
-        if (ol <= s) return 1f;
-        else return (float) ol / (float) s;
-    }
-
-    private String getTempFile() {
-        File file = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                System.currentTimeMillis() + ".jpg");
-        return file.getAbsolutePath();
-    }
-
-    private void byte2File(byte[] buf, File file) {
-        BufferedOutputStream bos = null;
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(file);
-            bos = new BufferedOutputStream(fos);
-            bos.write(buf);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (bos != null) {
-                try {
-                    bos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-
-    public synchronized void image() {
+    public synchronized CompressUtils image() {
         int w, h;
         float scale;
         if (bitmap == null) {
@@ -151,19 +128,24 @@ public class CompressUtils {
             newOpts.inJustDecodeBounds = false;
             w = newOpts.outWidth;
             h = newOpts.outHeight;
-            scale = getOptionScale(w, h, width, height);
-            newOpts.inSampleSize = getOptionSample(scale);
+            scale = ImageUtils.getOptionScale(w, h, width, height);
+            newOpts.inSampleSize = ImageUtils.getOptionSample(scale);
             bitmap = BitmapFactory.decodeFile(inputFilePath, newOpts);
         } else {
             w = bitmap.getWidth();
             h = bitmap.getHeight();
-            scale = getOptionScale(w, h, width, height);
+            scale = ImageUtils.getOptionScale(w, h, width, height);
         }
         if (w == 0 || h == 0)
-            return;
+            return this;
         if (scale > 1)
             bitmap = Bitmap.createScaledBitmap(bitmap, (int) (w / scale), (int) (h / scale), true);
-        String tempFile = getTempFile();
+        if (angle > 0) {
+            Matrix matrix = new Matrix();
+            matrix.setRotate(angle, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
+            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        }
+        String tempFile = ImageUtils.getTempFile();
         try {
             FileOutputStream outputStream = new FileOutputStream(tempFile);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
@@ -172,12 +154,18 @@ public class CompressUtils {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        imageCompress(tempFile, outputFilePath, quality);
+        if (!TextUtils.isEmpty(outputFilePath))
+            imageCompress(tempFile, outputFilePath, quality);
+        else {
+            tempOutFilePath = ImageUtils.getTempFile();
+            imageCompress(tempFile, tempOutFilePath, quality);
+        }
         new File(tempFile).delete();
         if (!TextUtils.isEmpty(tempInputFilePath)) new File(tempInputFilePath).delete();
+        return this;
     }
 
-    public synchronized void thumbnail() {
+    public synchronized CompressUtils thumbnail() {
         int w, h;
         float scale;
         if (bitmap == null) {
@@ -188,29 +176,40 @@ public class CompressUtils {
             newOpts.inJustDecodeBounds = false;
             w = newOpts.outWidth;
             h = newOpts.outHeight;
-            scale = getOptionScale(w, h, width, height);
-            newOpts.inSampleSize = getOptionSample(scale);
+            scale = ImageUtils.getOptionScale(w, h, width, height);
+            newOpts.inSampleSize = ImageUtils.getOptionSample(scale);
             bitmap = BitmapFactory.decodeFile(inputFilePath, newOpts);
         } else {
             w = bitmap.getWidth();
             h = bitmap.getHeight();
-            scale = getOptionScale(w, h, width, height);
+            scale = ImageUtils.getOptionScale(w, h, width, height);
         }
         if (w == 0 || h == 0)
-            return;
+            return this;
         if (scale > 1)
             bitmap = Bitmap.createScaledBitmap(bitmap, (int) (w / scale), (int) (h / scale), true);
+        if (angle > 0) {
+            Matrix matrix = new Matrix();
+            matrix.setRotate(angle, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
+            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        }
         ByteArrayOutputStream outputStream;
         outputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
         byte[] jpegBuff = outputStream.toByteArray();
-        thumbnailCompress(jpegBuff, outputFilePath, maxSize);
+        if (!TextUtils.isEmpty(outputFilePath))
+            thumbnailCompress(jpegBuff, outputFilePath, maxSize);
+        else {
+            tempOutFilePath = ImageUtils.getTempFile();
+            thumbnailCompress(jpegBuff, tempOutFilePath, maxSize);
+        }
         try {
             outputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
         if (!TextUtils.isEmpty(tempInputFilePath)) new File(tempInputFilePath).delete();
+        return this;
     }
 
     private static native void imageCompress(String inputFile, String outputFile, int quality);
