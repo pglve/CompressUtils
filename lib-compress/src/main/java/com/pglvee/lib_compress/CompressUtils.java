@@ -97,7 +97,7 @@ public class CompressUtils {
 
     public CompressUtils rotate() {
         if (!TextUtils.isEmpty(this.inputFilePath)) {
-            if (ImageUtils.getPicType(this.inputFilePath).equals("jpg")) {
+            if (ImageUtils.getMimeType(this.inputFilePath).equals("image/jpeg")) {
                 angle = ImageUtils.readPictureDegree(this.inputFilePath);
             }
         }

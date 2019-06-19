@@ -54,8 +54,9 @@ public class ImageUtils {
         return stringBuilder.toString();
     }
 
-    public static String getPicType(String path) {
-        //读取文件的前几个字节来判断图片格式
+    public static String getMimeType(String path) {
+        // 读取文件的前几个字节来判断图片格式
+        // https://www.jianshu.com/p/3266fc93b9f1
         byte[] b = new byte[4];
         FileInputStream fis = null;
         try {
@@ -63,15 +64,15 @@ public class ImageUtils {
             fis.read(b, 0, b.length);
             String type = bytesToHexString(b).toUpperCase();
             if (type.contains("FFD8FF")) {
-                return "jpg";
+                return "image/jpeg";
             } else if (type.contains("89504E47")) {
-                return "png";
+                return "image/png";
             } else if (type.contains("47494638")) {
-                return "gif";
+                return "image/gif";
             } else if (type.contains("424D")) {
-                return "bmp";
+                return "image/x-ms-bmp";
             } else {
-                return "unknow";
+                return "image/*";
             }
         } catch (IOException e) {
             e.printStackTrace();
