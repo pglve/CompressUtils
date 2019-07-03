@@ -31,6 +31,24 @@ public class ImageUtils {
         else return (float) ol / (float) s;
     }
 
+    public static int[] getOptionCrop(int oW, int oH, float maxScale) {
+        if (oW == 0 || oH == 0) return new int[]{0, 0, 0, 0};
+        int oWC = oW;
+        int oHC = oH;
+        int xOffset = 0;
+        int yOffset = 0;
+        if(maxScale > 0){
+            if((float)oW/oH > maxScale){
+                oWC = (int) (oH*maxScale);
+                xOffset = (oW-oWC)/2;
+            }else if((float)oH/oW > maxScale){
+                oHC = (int) (oW*maxScale);
+                yOffset = (oH-oHC)/2;
+            }
+        }
+        return new int[]{oWC, oHC, xOffset, yOffset};
+    }
+
     public static String getTempFile() {
         File file = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),

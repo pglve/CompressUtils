@@ -37,23 +37,16 @@ public class MainActivity extends AppCompatActivity {
     void compress(){
         File oldFile = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "203220.png"
+                "IMG_1559818127591.jpg"
         );
         File newFile = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "compress_AJ1.jpg"
-        );
-        File newFile2 = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "compress_AJ2.jpg"
+                "compress_BB5.jpg"
         );
         long start = System.currentTimeMillis();
-        CompressUtils.newInstance().size(1080,1920).src(oldFile).dst(newFile).quality(60).image();
+//        CompressUtils.newInstance().size(1080,1920).src(oldFile).dst(newFile).quality(90).maxScale(6f).image();
+        CompressUtils.newInstance().size(640).src(oldFile).dst(newFile).max(20*1024).crop(6f).thumbnail();
         Log.e(TAG, "compress time : "+(System.currentTimeMillis()-start)+" ms, image file size : "+newFile.length());
-//        start = System.currentTimeMillis();
-//        byte[] data = CompressUtils.newInstance().size(320).src(oldFile).max(20*1024).thumbnail().dst();
-//        Log.e(TAG, "compress time : "+(System.currentTimeMillis()-start)+" ms, thumb file size : "+data.length);
-
     }
 
 

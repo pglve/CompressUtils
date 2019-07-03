@@ -28,6 +28,7 @@ public class CompressUtils {
     private int outHeight;
     private int inWidth;
     private int inHeight;
+    private float maxScale;
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -38,18 +39,27 @@ public class CompressUtils {
         return new CompressUtils();
     }
 
+    /**
+     * 设置输出图片的宽高
+     */
     public CompressUtils size(int width, int height) {
         this.width = width;
         this.height = height;
         return this;
     }
 
+    /**
+     * 设置输出图片的宽高
+     */
     public CompressUtils size(int size) {
         this.width = size;
         this.height = size;
         return this;
     }
 
+    /**
+     * 设置输出图片的质量，使用{@link #thumbnail()}方法时无效
+     */
     public CompressUtils quality(int quality) {
         this.quality = quality;
         return this;
@@ -90,6 +100,14 @@ public class CompressUtils {
         return this;
     }
 
+    /**
+     * 设置图片最大比例，超出比例裁剪图片
+     */
+    public CompressUtils crop(float maxScale) {
+        this.maxScale = maxScale;
+        return this;
+    }
+
     public byte[] dst() {
         byte[] data = new byte[0];
         if (!TextUtils.isEmpty(tempOutFilePath)) {
@@ -99,14 +117,23 @@ public class CompressUtils {
         return data;
     }
 
-    public int[] outSize(){
+    /**
+     * 返回图片压缩之后的宽高
+     */
+    public int[] outSize() {
         return new int[]{outWidth, outHeight};
     }
 
-    public int[] inSize(){
+    /**
+     * 返回图片压缩之前的宽高
+     */
+    public int[] inSize() {
         return new int[]{inWidth, inHeight};
     }
 
+    /**
+     * 自动旋转图片
+     */
     public CompressUtils rotate() {
         if (!TextUtils.isEmpty(this.inputFilePath)) {
             if (ImageUtils.getMimeType(this.inputFilePath).equals("image/jpeg")) {
@@ -116,19 +143,29 @@ public class CompressUtils {
         return this;
     }
 
+    /**
+     * 根据角度旋转图片
+     */
     public CompressUtils rotate(int angle) {
         this.angle = angle;
         return this;
     }
 
+    /**
+     * 限制输出图片的最大大小，使用{@link #image()}方法时无效
+     */
     public CompressUtils max(long maxSize) {
         this.maxSize = maxSize;
         return this;
     }
 
+    /**
+     * 生成压缩图方法：通过quality控制质量，无法通过maxSize控制大小
+     */
     public synchronized CompressUtils image() {
         int w, h;
         float scale;
+        int[] cropOptions;
         boolean recycle = false;
         if (bitmap == null) {
             recycle = true;
@@ -139,13 +176,15 @@ public class CompressUtils {
             newOpts.inJustDecodeBounds = false;
             w = newOpts.outWidth;
             h = newOpts.outHeight;
-            scale = ImageUtils.getOptionScale(w, h, width, height);
+            cropOptions = ImageUtils.getOptionCrop(w, h, maxScale);
+            scale = ImageUtils.getOptionScale(cropOptions[0], cropOptions[1], width, height);
             newOpts.inSampleSize = ImageUtils.getOptionSample(scale);
             bitmap = BitmapFactory.decodeFile(inputFilePath, newOpts);
         } else {
             w = bitmap.getWidth();
             h = bitmap.getHeight();
-            scale = ImageUtils.getOptionScale(w, h, width, height);
+            cropOptions = ImageUtils.getOptionCrop(w, h, maxScale);
+            scale = ImageUtils.getOptionScale(cropOptions[0], cropOptions[1], width, height);
         }
         if (w == 0 || h == 0)
             return this;
@@ -155,11 +194,15 @@ public class CompressUtils {
         outHeight = (int) (h / scale);
         if (scale > 1)
             bitmap = Bitmap.createScaledBitmap(bitmap, outWidth, outHeight, true);
+        if (maxScale > 0)
+            bitmap = Bitmap.createBitmap(bitmap, (int) (cropOptions[2] / scale), (int) (cropOptions[3] / scale), (int) (cropOptions[0] / scale), (int) (cropOptions[1] / scale));
         if (angle > 0) {
             Matrix matrix = new Matrix();
             matrix.setRotate(angle, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
             bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
         }
+        outWidth = bitmap.getWidth();
+        outHeight = bitmap.getHeight();
         String tempFile = ImageUtils.getTempFile();
         try {
             FileOutputStream outputStream = new FileOutputStream(tempFile);
@@ -188,9 +231,13 @@ public class CompressUtils {
         return this;
     }
 
+    /**
+     * 生成缩略图方法：通过maxSize控制输出大小，无法通过quality控制质量
+     */
     public synchronized CompressUtils thumbnail() {
         int w, h;
         float scale;
+        int[] cropOptions;
         boolean recycle = false;
         if (bitmap == null) {
             recycle = true;
@@ -201,13 +248,15 @@ public class CompressUtils {
             newOpts.inJustDecodeBounds = false;
             w = newOpts.outWidth;
             h = newOpts.outHeight;
-            scale = ImageUtils.getOptionScale(w, h, width, height);
+            cropOptions = ImageUtils.getOptionCrop(w, h, maxScale);
+            scale = ImageUtils.getOptionScale(cropOptions[0], cropOptions[1], width, height);
             newOpts.inSampleSize = ImageUtils.getOptionSample(scale);
             bitmap = BitmapFactory.decodeFile(inputFilePath, newOpts);
         } else {
             w = bitmap.getWidth();
             h = bitmap.getHeight();
-            scale = ImageUtils.getOptionScale(w, h, width, height);
+            cropOptions = ImageUtils.getOptionCrop(w, h, maxScale);
+            scale = ImageUtils.getOptionScale(cropOptions[0], cropOptions[1], width, height);
         }
         if (w == 0 || h == 0)
             return this;
@@ -217,11 +266,15 @@ public class CompressUtils {
         outHeight = (int) (h / scale);
         if (scale > 1)
             bitmap = Bitmap.createScaledBitmap(bitmap, outWidth, outHeight, true);
+        if (maxScale > 0)
+            bitmap = Bitmap.createBitmap(bitmap, (int) (cropOptions[2] / scale), (int) (cropOptions[3] / scale), (int) (cropOptions[0] / scale), (int) (cropOptions[1] / scale));
         if (angle > 0) {
             Matrix matrix = new Matrix();
             matrix.setRotate(angle, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
             bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
         }
+        outWidth = bitmap.getWidth();
+        outHeight = bitmap.getHeight();
         ByteArrayOutputStream outputStream;
         outputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);

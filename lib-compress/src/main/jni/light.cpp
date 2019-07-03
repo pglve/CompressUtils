@@ -400,7 +400,7 @@ int thumbnailCompress(unsigned char *jpegBuf, unsigned long jpegSize, const char
             THROW_TJ("compressing image", thumbout);
         }
 
-    } while (jpegSize_out > maxSize);
+    } while (jpegSize_out > maxSize && maxSize > 0);
 
     /* Write the JPEG image to disk. */
     if (fwrite(jpegBuf_out, jpegSize_out, 1, jpegFile) < 1) {
