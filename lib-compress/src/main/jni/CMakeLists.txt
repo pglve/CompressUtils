@@ -21,20 +21,11 @@ add_library( # Sets the name of the library.
         # Provides a relative path to your source file(s).
         light.cpp)
 
-add_library(libjpeg SHARED IMPORTED)
-
-add_library(libturbojpeg STATIC IMPORTED)
-
-set_target_properties(# Specifies the target library.
-        libjpeg
-        # Specifies the parameter you want to define.
-        PROPERTIES IMPORTED_LOCATION
-        # Provides the path to the library you want to import.
-        ${CMAKE_SOURCE_DIR}/libs/src/${ANDROID_ABI}/libjpeg.so)
+add_library(libturbojpeg SHARED IMPORTED)
 
 set_target_properties(libturbojpeg
         PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_SOURCE_DIR}/libs/src/${ANDROID_ABI}/libturbojpeg.a)
+        ${CMAKE_SOURCE_DIR}/libs/src/${ANDROID_ABI}/libturbojpeg.so)
 
 # Specifies a path to native header files.
 include_directories(${CMAKE_SOURCE_DIR}/libs/include/)
@@ -58,7 +49,6 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
         light
-        libjpeg
         libturbojpeg
         # Links the target library to the log library
         # included in the NDK.
