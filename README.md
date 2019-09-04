@@ -13,6 +13,6 @@ allprojects {
 #### Then, add the library to your module build.gradle
 ```xml
 dependencies {
-    implementation 'com.github.pglve:CompressUtils:0.1.4'
+    implementation 'com.github.pglve:CompressUtils:0.1.5'
 }
 ```
