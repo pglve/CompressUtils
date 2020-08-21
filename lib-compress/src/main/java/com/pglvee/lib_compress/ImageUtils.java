@@ -2,6 +2,7 @@ package com.pglvee.lib_compress;
 
 import android.media.ExifInterface;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedOutputStream;
@@ -15,7 +16,7 @@ public class ImageUtils {
 
     private static final String TAG = "ImageUtils";
 
-    public static int getOptionSample(final float scale) {
+    static int getOptionSample(final float scale) {
         if (scale < 2) return 1;
         else if (scale >= 2f && scale < 4f) return 2;
         else if (scale >= 4f && scale < 8f) return 4;
@@ -23,7 +24,7 @@ public class ImageUtils {
         else return 16;
     }
 
-    public static float getOptionScale(int oW, int oH, int w, int h) {
+    static float getOptionScale(int oW, int oH, int w, int h) {
         if (w == 0 || h == 0 || oW == 0 || oH == 0) return 1f;
         int ol = Math.max(oW, oH);
         int s = Math.max(w, h);
@@ -31,7 +32,7 @@ public class ImageUtils {
         else return (float) ol / (float) s;
     }
 
-    public static int[] getOptionCrop(int oW, int oH, float maxScale) {
+    static int[] getOptionCrop(int oW, int oH, float maxScale) {
         if (oW == 0 || oH == 0) return new int[]{0, 0, 0, 0};
         int oWC = oW;
         int oHC = oH;
@@ -49,19 +50,25 @@ public class ImageUtils {
         return new int[]{oWC, oHC, xOffset, yOffset};
     }
 
-    public static String getTempFile() {
+    static String getTempFile() {
         File file = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
                 "temp"+System.currentTimeMillis() + ".jpg");
         return file.getAbsolutePath();
     }
 
-    public static String bytesToHexString(byte[] src) {
+    private static String bytesToHexString(byte[] src) {
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+        return bytesToHexString(src, src.length);
+    }
+    private static String bytesToHexString(byte[] src, int length) {
         StringBuilder stringBuilder = new StringBuilder();
         if (src == null || src.length <= 0) {
             return null;
         }
-        for (int i = 0; i < src.length; i++) {
+        for (int i = 0; i < length; i++) {
             int v = src[i] & 0xFF;
             String hv = Integer.toHexString(v);
             if (hv.length() < 2) {
@@ -69,18 +76,16 @@ public class ImageUtils {
             }
             stringBuilder.append(hv);
         }
-        return stringBuilder.toString();
+        return stringBuilder.toString().toUpperCase();
     }
 
     public static String getMimeType(String path) {
         // 读取文件的前几个字节来判断图片格式
         // https://www.jianshu.com/p/3266fc93b9f1
         byte[] b = new byte[4];
-        FileInputStream fis = null;
-        try {
-            fis = new FileInputStream(path);
+        try (FileInputStream fis = new FileInputStream(path)){
             fis.read(b, 0, b.length);
-            String type = bytesToHexString(b).toUpperCase();
+            String type = bytesToHexString(b);
             if (type.contains("FFD8FF")) {
                 return "image/jpeg";
             } else if (type.contains("89504E47")) {
@@ -89,56 +94,50 @@ public class ImageUtils {
                 return "image/gif";
             } else if (type.contains("424D")) {
                 return "image/x-ms-bmp";
+            } else if (type.contains("52494646")) {
+                return "image/webp";
             } else {
                 return "image/*";
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-        return "unknow";
+        return "*/*";
     }
 
-    public static void byte2File(byte[] buf, File file) {
-        BufferedOutputStream bos = null;
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(file);
-            bos = new BufferedOutputStream(fos);
+    public static String getMimeType(byte[] data){
+        String prefix = bytesToHexString(data, 4);
+        if(prefix == null) return "image/*";
+        String type = prefix.toUpperCase();
+        if (type.contains("FFD8FF")) {
+            return "image/jpeg";
+        } else if (type.contains("89504E47")) {
+            return "image/png";
+        } else if (type.contains("47494638")) {
+            return "image/gif";
+        } else if (type.contains("424D")) {
+            return "image/x-ms-bmp";
+        } else if (type.contains("52494646")) {
+            return "image/webp";
+        } else {
+            return "image/*";
+        }
+    }
+
+    static void byte2File(byte[] buf, File file) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+             BufferedOutputStream bos = new BufferedOutputStream(fos)){
             bos.write(buf);
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (bos != null) {
-                try {
-                    bos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
-    public static byte[] file2byte(String filePath) {
+    static byte[] file2byte(String filePath) {
         byte[] buffer = null;
-        try {
-            File file = new File(filePath);
-            FileInputStream fis = new FileInputStream(file);
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        File file = new File(filePath);
+        try (FileInputStream fis = new FileInputStream(file);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()){
             byte[] b = new byte[8 * 1024];
             int n;
             while ((n = fis.read(b)) != -1) {
@@ -154,6 +153,7 @@ public class ImageUtils {
     }
 
     public static int readPictureDegree(String path) {
+        if(TextUtils.isEmpty(path) || !"image/jpeg".equals(getMimeType(path))) return 0;
         int degree = 0;
         try {
             ExifInterface exifInterface = new ExifInterface(path);

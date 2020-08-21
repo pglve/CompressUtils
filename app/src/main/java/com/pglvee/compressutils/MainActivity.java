@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     void compress(){
         File oldFile = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "IMG_1559818127591.jpg"
+                "IMG_1567413460211.jpg"
         );
         File newFile = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),

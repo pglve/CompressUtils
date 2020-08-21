@@ -32,7 +32,7 @@ const char *colorspaceName[TJ_NUMCS] = {
         "RGB", "YCbCr", "GRAY", "CMYK", "YCCK"
 };
 
-tjscalingfactor *scalingFactors = NULL;
+tjscalingfactor *scalingFactors = nullptr;
 int numScalingFactors = 0;
 
 /* DCT filter example.  This produces a negative of the image. */
@@ -138,13 +138,13 @@ int mainCompress(
     int flags = 0;
     int width, height;
     char *inFormat, *outFormat;
-    FILE *jpegFile = NULL;
-    unsigned char *imgBuf = NULL, *jpegBuf = NULL;
+    FILE *jpegFile = nullptr;
+    unsigned char *imgBuf = nullptr, *jpegBuf = nullptr;
     int retval = 0, i, pixelFormat = TJPF_UNKNOWN;
-    tjhandle tjInstance = NULL;
+    tjhandle tjInstance = nullptr;
 
-    if ((scalingFactors = tjGetScalingFactors(&numScalingFactors)) == NULL) {
-        THROW_TJ("getting scaling factors", mainbailout);
+    if ((scalingFactors = tjGetScalingFactors(&numScalingFactors)) == nullptr) {
+        THROW_TJ("getting scaling factors", mainbailout)
     }
     memset(&xform, 0, sizeof(tjtransform));
     ///*参数设置----------------------------------start*/
@@ -190,11 +190,11 @@ int mainCompress(
         long size;
         int inSubsamp, inColorspace;
         int doTransform = (xform.op != TJXOP_NONE || xform.options != 0 ||
-                           xform.customFilter != NULL);
+                           xform.customFilter != nullptr);
         unsigned long jpegSize;
 
         /* Read the JPEG file into memory. */
-        if ((jpegFile = fopen(input, "rb")) == NULL) {
+        if ((jpegFile = fopen(input, "rb")) == nullptr) {
             THROW_UNIX("opening input file", mainbailout);
         }
         if (fseek(jpegFile, 0, SEEK_END) < 0 || ((size = ftell(jpegFile)) < 0) || fseek(jpegFile, 0, SEEK_SET) < 0) {
@@ -204,7 +204,7 @@ int mainCompress(
             THROW("determining input file size", "Input file contains no data", mainbailout);
         }
         jpegSize = (unsigned long) size;
-        if ((jpegBuf = tjAlloc(jpegSize)) == NULL) {
+        if ((jpegBuf = tjAlloc(jpegSize)) == nullptr) {
             THROW_UNIX("allocating JPEG buffer", mainbailout);
         }
 
@@ -212,14 +212,14 @@ int mainCompress(
             THROW_UNIX("reading input file", mainbailout);
         }
         fclose(jpegFile);
-        jpegFile = NULL;
+        jpegFile = nullptr;
 
         if (doTransform) {
             /* Transform it. */
-            unsigned char *dstBuf = NULL;  /* Dynamically allocate the JPEG buffer */
+            unsigned char *dstBuf = nullptr;  /* Dynamically allocate the JPEG buffer */
             unsigned long dstSize = 0;
 
-            if ((tjInstance = tjInitTransform()) == NULL) {
+            if ((tjInstance = tjInitTransform()) == nullptr) {
                 THROW_TJ("initializing transformer", mainbailout);
             }
             xform.options |= TJXOPT_TRIM;
@@ -231,7 +231,7 @@ int mainCompress(
             jpegBuf = dstBuf;
             jpegSize = dstSize;
         } else {
-            if ((tjInstance = tjInitDecompress()) == NULL) {
+            if ((tjInstance = tjInitDecompress()) == nullptr) {
                 THROW_TJ("initializing decompressor", mainbailout);
             }
         }
@@ -247,14 +247,14 @@ int mainCompress(
             scalingFactor.num == 1 && scalingFactor.denom == 1 && outSubsamp < 0 && outQual < 0) {
             /* Input image has been transformed, and no re-compression options
                have been selected.  Write the transformed image to disk and exit. */
-            if ((jpegFile = fopen(output, "wb")) == NULL) {
+            if ((jpegFile = fopen(output, "wb")) == nullptr) {
                 THROW_UNIX("opening output file", mainbailout);
             }
             if (fwrite(jpegBuf, jpegSize, 1, jpegFile) < 1) {
                 THROW_UNIX("writing output file", mainbailout);
             }
             fclose(jpegFile);
-            jpegFile = NULL;
+            jpegFile = nullptr;
             goto labmainbailout;
         }
 
@@ -265,7 +265,7 @@ int mainCompress(
         if (outSubsamp < 0)
             outSubsamp = inSubsamp;
         pixelFormat = TJPF_BGRX;
-        if ((imgBuf = tjAlloc(width * height * tjPixelSize[pixelFormat])) == NULL) {
+        if ((imgBuf = tjAlloc(width * height * tjPixelSize[pixelFormat])) == nullptr) {
             THROW_UNIX("allocating uncompressed image buffer", mainbailout);
         }
 
@@ -275,12 +275,12 @@ int mainCompress(
         }
 
         tjFree(jpegBuf);
-        jpegBuf = NULL;
+        jpegBuf = nullptr;
         tjDestroy(tjInstance);
-        tjInstance = NULL;
+        tjInstance = nullptr;
     } else {
         /* Input image is not a JPEG image.  Load it into memory. */
-        if ((imgBuf = tjLoadImage(input, &width, 1, &height, &pixelFormat, 0)) == NULL) {
+        if ((imgBuf = tjLoadImage(input, &width, 1, &height, &pixelFormat, 0)) == nullptr) {
             THROW_TJ("loading input image", mainbailout);
         }
         if (outSubsamp < 0) {
@@ -297,14 +297,14 @@ int mainCompress(
     if (!strcasecmp(outFormat, "jpg") || !strcasecmp(outFormat, "jpeg")) {
         /* Output image format is JPEG.  Compress the uncompressed image. */
         unsigned long jpegSize = 0;
-        jpegBuf = NULL;  /* Dynamically allocate the JPEG buffer */
+        jpegBuf = nullptr;  /* Dynamically allocate the JPEG buffer */
 
         if (outQual < 0)
             outQual = DEFAULT_QUALITY;
         printf(", %s subsampling, quality = %d\n", subsampName[outSubsamp], outQual);
 
 
-        if ((tjInstance = tjInitCompress()) == NULL) {
+        if ((tjInstance = tjInitCompress()) == nullptr) {
             THROW_TJ("initializing compressor", mainbailout);
         }
         if (tjCompress2(tjInstance, imgBuf, width, 0, height, pixelFormat, &jpegBuf, &jpegSize, outSubsamp, outQual,
@@ -313,10 +313,10 @@ int mainCompress(
         }
 
         tjDestroy(tjInstance);
-        tjInstance = NULL;
+        tjInstance = nullptr;
 
         /* Write the JPEG image to disk. */
-        if ((jpegFile = fopen(output, "wb")) == NULL) {
+        if ((jpegFile = fopen(output, "wb")) == nullptr) {
             THROW_UNIX("opening output file", mainbailout);
         }
         if (fwrite(jpegBuf, jpegSize, 1, jpegFile) < 1) {
@@ -324,11 +324,11 @@ int mainCompress(
         }
 
         tjDestroy(tjInstance);
-        tjInstance = NULL;
+        tjInstance = nullptr;
         fclose(jpegFile);
-        jpegFile = NULL;
+        jpegFile = nullptr;
         tjFree(jpegBuf);
-        jpegBuf = NULL;
+        jpegBuf = nullptr;
 
     } else {
         /* Output image format is not JPEG.  Save the uncompressed image directly to disk. */
@@ -349,29 +349,28 @@ int mainCompress(
 int thumbnailCompress(unsigned char *jpegBuf, unsigned long jpegSize, const char *output, unsigned long maxSize) {
     int retval = 0;
     int quality = 100;
-    tjhandle tjInstance = NULL;
-    unsigned char *imgBuf = NULL;
-    FILE *jpegFile = NULL;
+    tjhandle tjInstance = nullptr;
+    unsigned char *imgBuf = nullptr;
+    FILE *jpegFile = nullptr;
     int width, height, inSubsamp, inColorspace;
     unsigned long jpegSize_out = 0;
-    unsigned char *jpegBuf_out = NULL;
+    unsigned char *jpegBuf_out = nullptr;
 
-    if ((jpegFile = fopen(output, "wb")) == NULL) {
+    if ((jpegFile = fopen(output, "wb")) == nullptr) {
         THROW_UNIX("opening output file", thumbout);
     }
 
-    if ((tjInstance = tjInitDecompress()) == NULL) {
+    if ((tjInstance = tjInitDecompress()) == nullptr) {
         THROW_TJ("initializing decompressor", thumbout);
     }
 
     if (tjDecompressHeader3(tjInstance, jpegBuf, jpegSize, &width, &height, &inSubsamp, &inColorspace) < 0) {
         THROW_TJ("reading JPEG header", thumbout);
     }
+    printf("Input Image:  %d x %d pixels, %s subsampling, %s colorspace, %ld byte\n", width, height, subsampName[inSubsamp],
+           colorspaceName[inColorspace], jpegSize);
 
-    printf("Input Image:  %d x %d pixels, %s subsampling, %s colorspace\n", width, height, subsampName[inSubsamp],
-           colorspaceName[inColorspace]);
-
-    if ((imgBuf = tjAlloc(width * height * tjPixelSize[TJPF_BGRX])) == NULL) {
+    if ((imgBuf = tjAlloc(width * height * tjPixelSize[TJPF_BGRX])) == nullptr) {
         THROW_UNIX("allocating uncompressed image buffer", thumbout);
     }
 
@@ -380,18 +379,22 @@ int thumbnailCompress(unsigned char *jpegBuf, unsigned long jpegSize, const char
     }
 
     tjDestroy(tjInstance);
-    tjInstance = NULL;
+    tjInstance = nullptr;
+    jpegSize_out = jpegSize;
 
     do {
         tjFree(jpegBuf_out);
-        jpegBuf_out = NULL;
+        jpegBuf_out = nullptr;
 
         printf("Output Image :  %d x %d pixels", width, height);
 
         /* Output image format is JPEG.  Compress the uncompressed image. */
-        printf(", %s subsampling, quality = %d\n", subsampName[inSubsamp], quality -= 10);
+        unsigned long scale = jpegSize_out/maxSize;
+        if(scale > 5) scale = 5;
+        quality -= (10*(int)scale);
+        printf(", %s subsampling, quality = %d\n", subsampName[inSubsamp], quality);
 
-        if ((tjInstance = tjInitCompress()) == NULL) {
+        if ((tjInstance = tjInitCompress()) == nullptr) {
             THROW_TJ("initializing compressor", thumbout);
         }
 
@@ -408,11 +411,11 @@ int thumbnailCompress(unsigned char *jpegBuf, unsigned long jpegSize, const char
     }
 
     tjDestroy(tjInstance);
-    tjInstance = NULL;
+    tjInstance = nullptr;
     fclose(jpegFile);
-    jpegFile = NULL;
+    jpegFile = nullptr;
     tjFree(jpegBuf_out);
-    jpegBuf_out = NULL;
+    jpegBuf_out = nullptr;
 
     labthumbout:
     if (imgBuf) tjFree(imgBuf);
@@ -422,11 +425,33 @@ int thumbnailCompress(unsigned char *jpegBuf, unsigned long jpegSize, const char
     return retval;
 }
 
+
 extern "C" JNIEXPORT void JNICALL
-Java_com_pglvee_lib_1compress_CompressUtils_imageCompress(JNIEnv *env, jclass clazz, jstring in, jstring out,
-                                                                jint quality) {
-    const char *src = env->GetStringUTFChars(in, NULL);
-    const char *dst = env->GetStringUTFChars(out, NULL);
+Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_compress(JNIEnv *env, jclass clazz,
+                                                          jboolean scale, jint m, jint n, jboolean su, jint subsamp, jboolean q, jint qual, jboolean g,
+                                                          jboolean hflip, jboolean vflip, jboolean transpose, jboolean transverse, jboolean rot90, jboolean rot180, jboolean rot270,
+                                                          jboolean c, jint c_w, jint c_h, jint  c_x, jint  c_y,
+                                                          jboolean fastupsample, jboolean fastdct, jboolean accuratedct,
+                                                          jstring input, jstring output) {
+    const char *src = env->GetStringUTFChars(input, nullptr);
+    const char *dst = env->GetStringUTFChars(output, nullptr);
+    mainCompress(
+            scale, m, n,
+            su, subsamp,
+            q, qual,
+            g,
+            hflip, vflip, transpose, transverse, rot90, rot180, rot270,
+            false,
+            c, c_w, c_h, c_x, c_y,
+            fastupsample, fastdct, accuratedct,
+            src, dst);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_imageCompress(JNIEnv *env, jclass clazz, jstring in, jstring out,
+                                                               jint quality) {
+    const char *src = env->GetStringUTFChars(in, nullptr);
+    const char *dst = env->GetStringUTFChars(out, nullptr);
     mainCompress(
             false, 1, 1,
             false, 0,
@@ -440,10 +465,10 @@ Java_com_pglvee_lib_1compress_CompressUtils_imageCompress(JNIEnv *env, jclass cl
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_pglvee_lib_1compress_CompressUtils_thumbnailCompress(JNIEnv *env, jclass clazz, jbyteArray in,
-                                                                    jstring out, jlong maxSize) {
+Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_thumbnailCompress(JNIEnv *env, jclass clazz, jbyteArray in,
+                                                                   jstring out, jlong maxSize) {
     jbyte *src = env->GetByteArrayElements(in, 0);
     jsize length = env->GetArrayLength(in);
-    const char *dst = env->GetStringUTFChars(out, NULL);
+    const char *dst = env->GetStringUTFChars(out, nullptr);
     thumbnailCompress((unsigned char *) src, length, dst, maxSize);
 }

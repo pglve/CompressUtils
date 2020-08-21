@@ -2,15 +2,18 @@ package com.pglvee.lib_compress;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
 public class CompressUtils {
 
     private static final String TAG = "compress-jni";
@@ -30,7 +33,7 @@ public class CompressUtils {
     private int inHeight;
     private float maxScale;
 
-    // Used to load the 'native-lib' library on application startup.
+    // Used to load the 'light' library on application startup.
     static {
         System.loadLibrary("light");
     }
@@ -135,11 +138,7 @@ public class CompressUtils {
      * 自动旋转图片
      */
     public CompressUtils rotate() {
-        if (!TextUtils.isEmpty(this.inputFilePath)) {
-            if (ImageUtils.getMimeType(this.inputFilePath).equals("image/jpeg")) {
-                angle = ImageUtils.readPictureDegree(this.inputFilePath);
-            }
-        }
+        this.angle = ImageUtils.readPictureDegree(this.inputFilePath);
         return this;
     }
 
@@ -163,6 +162,7 @@ public class CompressUtils {
      * 生成压缩图方法：通过quality控制质量，无法通过maxSize控制大小
      */
     public synchronized CompressUtils image() {
+        long before = SystemClock.uptimeMillis();
         int w, h;
         float scale;
         int[] cropOptions;
@@ -171,7 +171,7 @@ public class CompressUtils {
             recycle = true;
             BitmapFactory.Options newOpts = new BitmapFactory.Options();
             newOpts.inJustDecodeBounds = true;
-            newOpts.inPreferredConfig = Bitmap.Config.RGB_565;
+            newOpts.inPreferredConfig = Bitmap.Config.ARGB_8888;
             BitmapFactory.decodeFile(inputFilePath, newOpts);
             newOpts.inJustDecodeBounds = false;
             w = newOpts.outWidth;
@@ -186,7 +186,7 @@ public class CompressUtils {
             cropOptions = ImageUtils.getOptionCrop(w, h, maxScale);
             scale = ImageUtils.getOptionScale(cropOptions[0], cropOptions[1], width, height);
         }
-        if (w == 0 || h == 0)
+        if (w == 0 || h == 0 || bitmap == null)
             return this;
         inWidth = w;
         inHeight = h;
@@ -203,10 +203,14 @@ public class CompressUtils {
         }
         outWidth = bitmap.getWidth();
         outHeight = bitmap.getHeight();
+        Bitmap outB = bitmap.copy(Bitmap.Config.ARGB_8888,true);
+        Canvas canvas = new Canvas(outB);
+        canvas.drawColor(Color.WHITE);
+        canvas.drawBitmap(bitmap, 0, 0, null);
         String tempFile = ImageUtils.getTempFile();
         try {
             FileOutputStream outputStream = new FileOutputStream(tempFile);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            outB.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
             outputStream.flush();
             outputStream.close();
         } catch (IOException e) {
@@ -225,9 +229,13 @@ public class CompressUtils {
                 bitmap.recycle();
                 bitmap = null;
             }
+            if (outB != null) {
+                outB.recycle();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        Log.d(TAG, "compress consume time :-" + (SystemClock.uptimeMillis() - before));
         return this;
     }
 
@@ -235,6 +243,7 @@ public class CompressUtils {
      * 生成缩略图方法：通过maxSize控制输出大小，无法通过quality控制质量
      */
     public synchronized CompressUtils thumbnail() {
+        long before = SystemClock.uptimeMillis();
         int w, h;
         float scale;
         int[] cropOptions;
@@ -243,7 +252,7 @@ public class CompressUtils {
             recycle = true;
             BitmapFactory.Options newOpts = new BitmapFactory.Options();
             newOpts.inJustDecodeBounds = true;
-            newOpts.inPreferredConfig = Bitmap.Config.RGB_565;
+            newOpts.inPreferredConfig = Bitmap.Config.ARGB_8888;
             BitmapFactory.decodeFile(inputFilePath, newOpts);
             newOpts.inJustDecodeBounds = false;
             w = newOpts.outWidth;
@@ -258,7 +267,7 @@ public class CompressUtils {
             cropOptions = ImageUtils.getOptionCrop(w, h, maxScale);
             scale = ImageUtils.getOptionScale(cropOptions[0], cropOptions[1], width, height);
         }
-        if (w == 0 || h == 0)
+        if (w == 0 || h == 0 || bitmap == null)
             return this;
         inWidth = w;
         inHeight = h;
@@ -275,9 +284,13 @@ public class CompressUtils {
         }
         outWidth = bitmap.getWidth();
         outHeight = bitmap.getHeight();
+        Bitmap outB = bitmap.copy(Bitmap.Config.ARGB_8888,true);
+        Canvas canvas = new Canvas(outB);
+        canvas.drawColor(Color.WHITE);
+        canvas.drawBitmap(bitmap, 0, 0, null);
         ByteArrayOutputStream outputStream;
         outputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+        outB.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
         byte[] jpegBuff = outputStream.toByteArray();
         if (!TextUtils.isEmpty(outputFilePath))
             thumbnailCompress(jpegBuff, outputFilePath, maxSize);
@@ -296,14 +309,54 @@ public class CompressUtils {
                 bitmap.recycle();
                 bitmap = null;
             }
+            if (outB != null) {
+                outB.recycle();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        Log.d(TAG, "compress consume time :-" + (SystemClock.uptimeMillis() - before));
         return this;
     }
 
     private static native void imageCompress(String inputFile, String outputFile, int quality);
 
     private static native void thumbnailCompress(byte[] inputData, String outputFile, long maxSize);
+
+    /**
+     * @param scale scale <-> m/n
+     * @param m Scaling factor ： Numerator
+     * @param n Scaling factor ： Denominator
+     * @param su outSubSample <-> subSample
+     * @param subSample the level of chrominance subsampling to be used when generating the JPEG image (see @ref TJSAMP "Chrominance subsampling options".)
+     * @param q quality <-> quality
+     * @param quality jpegQual the image quality of the generated JPEG image (1 = worst, 100 = best)
+     * @param g xform-option(共存) : TJXOPT_GRAY
+     * @param hFlip xform-op(互斥) : TJXOP_HFLIP
+     * @param vFlip .. : TJXOP_VFLIP
+     * @param transpose .. : TJXOP_TRANSPOSE
+     * @param transverse .. : TJXOP_TRANSVERSE
+     * @param rot90 .. : TJXOP_ROT90
+     * @param rot180 .. : TJXOP_ROT180
+     * @param rot270 .. : TJXOP_ROT270
+     * @param c xform-crop (xform-option : TJXOPT_CROP) :Cropping region <-> w,h,x,y
+     * @param c_w ..
+     * @param c_h ..
+     * @param c_x ..
+     * @param c_y ..
+     * @param fastUpSample flags(共存) : TJFLAG_FASTUPSAMPLE
+     * @param fastDCT .. : TJFLAG_FASTDCT
+     * @param accurateDCT .. : TJFLAG_ACCURATEDCT
+     * @param input input filename
+     * @param output output filename
+     */
+    protected static native void compress(boolean scale, int m, int n,
+                                          boolean su, int subSample,
+                                          boolean q, int quality,
+                                          boolean g,
+                                          boolean hFlip, boolean vFlip, boolean transpose, boolean transverse, boolean rot90, boolean rot180, boolean rot270,
+                                          boolean c, int c_w, int c_h, int  c_x, int  c_y,
+                                          boolean fastUpSample, boolean fastDCT, boolean accurateDCT,
+                                          String input, String output);
 
 }
