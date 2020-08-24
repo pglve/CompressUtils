@@ -427,7 +427,7 @@ int thumbnailCompress(unsigned char *jpegBuf, unsigned long jpegSize, const char
 
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_compress(JNIEnv *env, jclass clazz,
+Java_com_pglvee_lib_1compress_CompressUtils_compress(JNIEnv *env, jclass clazz,
                                                           jboolean scale, jint m, jint n, jboolean su, jint subsamp, jboolean q, jint qual, jboolean g,
                                                           jboolean hflip, jboolean vflip, jboolean transpose, jboolean transverse, jboolean rot90, jboolean rot180, jboolean rot270,
                                                           jboolean c, jint c_w, jint c_h, jint  c_x, jint  c_y,
@@ -448,7 +448,7 @@ Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_compress(JNIEnv *env, jclass cl
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_imageCompress(JNIEnv *env, jclass clazz, jstring in, jstring out,
+Java_com_pglvee_lib_1compress_CompressUtils_imageCompress(JNIEnv *env, jclass clazz, jstring in, jstring out,
                                                                jint quality) {
     const char *src = env->GetStringUTFChars(in, nullptr);
     const char *dst = env->GetStringUTFChars(out, nullptr);
@@ -465,7 +465,7 @@ Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_imageCompress(JNIEnv *env, jcla
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_pglvee_turbojpeg_12_10_13_CompressUtils_thumbnailCompress(JNIEnv *env, jclass clazz, jbyteArray in,
+Java_com_pglvee_lib_1compress_CompressUtils_thumbnailCompress(JNIEnv *env, jclass clazz, jbyteArray in,
                                                                    jstring out, jlong maxSize) {
     jbyte *src = env->GetByteArrayElements(in, 0);
     jsize length = env->GetArrayLength(in);
