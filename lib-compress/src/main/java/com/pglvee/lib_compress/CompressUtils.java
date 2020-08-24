@@ -32,6 +32,7 @@ public class CompressUtils {
     private int inWidth;
     private int inHeight;
     private float maxScale;
+    private int background;
 
     // Used to load the 'light' library on application startup.
     static {
@@ -108,6 +109,14 @@ public class CompressUtils {
      */
     public CompressUtils crop(float maxScale) {
         this.maxScale = maxScale;
+        return this;
+    }
+
+    /**
+     * 设置背景颜色，对于带透明度的png图片可以设置为白底或黑底
+     */
+    public CompressUtils background(int color) {
+        this.background = color;
         return this;
     }
 
@@ -205,7 +214,9 @@ public class CompressUtils {
         outHeight = bitmap.getHeight();
         Bitmap outB = bitmap.copy(Bitmap.Config.ARGB_8888,true);
         Canvas canvas = new Canvas(outB);
-        canvas.drawColor(Color.WHITE);
+        if (background != 0) {
+            canvas.drawColor(background);
+        }
         canvas.drawBitmap(bitmap, 0, 0, null);
         String tempFile = ImageUtils.getTempFile();
         try {
@@ -235,7 +246,7 @@ public class CompressUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Log.d(TAG, "compress consume time :-" + (SystemClock.uptimeMillis() - before));
+        Log.d(TAG, "compress consume time : " + (SystemClock.uptimeMillis() - before) + "ms");
         return this;
     }
 
@@ -286,7 +297,9 @@ public class CompressUtils {
         outHeight = bitmap.getHeight();
         Bitmap outB = bitmap.copy(Bitmap.Config.ARGB_8888,true);
         Canvas canvas = new Canvas(outB);
-        canvas.drawColor(Color.WHITE);
+        if (background != 0) {
+            canvas.drawColor(background);
+        }
         canvas.drawBitmap(bitmap, 0, 0, null);
         ByteArrayOutputStream outputStream;
         outputStream = new ByteArrayOutputStream();
@@ -309,13 +322,11 @@ public class CompressUtils {
                 bitmap.recycle();
                 bitmap = null;
             }
-            if (outB != null) {
-                outB.recycle();
-            }
+            outB.recycle();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Log.d(TAG, "compress consume time :-" + (SystemClock.uptimeMillis() - before));
+        Log.d(TAG, "compress consume time : " + (SystemClock.uptimeMillis() - before) + "ms");
         return this;
     }
 
