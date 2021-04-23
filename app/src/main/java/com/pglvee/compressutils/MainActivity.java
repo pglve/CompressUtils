@@ -1,22 +1,24 @@
 package com.pglvee.compressutils;
 
-import android.Manifest;
-import android.os.Environment;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 
-import androidx.annotation.NonNull;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.pglvee.lib_compress.CompressUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.RuntimePermissions;
 
-@RuntimePermissions
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "compress";
@@ -25,35 +27,44 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        final ActivityResultLauncher<String> register = registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
+            @Override
+            public void onActivityResult(Uri result) {
+                File file = uri2File(result);
+                if (file.exists())
+                    compress(file);
+
+            }
+        });
         findViewById(R.id.compress).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MainActivityPermissionsDispatcher.compressWithPermissionCheck(MainActivity.this);
+                register.launch("image/*");
             }
         });
     }
 
-    @NeedsPermission({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
-    void compress(){
-        File oldFile = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "IMG_1567413460211.jpg"
-        );
-        File newFile = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "compress_BB5.jpg"
-        );
-        long start = System.currentTimeMillis();
-//        CompressUtils.newInstance().size(1080,1920).src(oldFile).dst(newFile).quality(90).maxScale(6f).image();
-        CompressUtils.newInstance().size(640).src(oldFile).dst(newFile).max(20*1024).crop(6f).thumbnail();
-        Log.e(TAG, "compress time : "+(System.currentTimeMillis()-start)+" ms, image file size : "+newFile.length());
+    private File uri2File(Uri uri) {
+        File targetFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "original.jpg");
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             OutputStream outputStream = new FileOutputStream(targetFile)) {
+            int read;
+            byte[] buffer = new byte[64 * 1024];
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+        return targetFile;
     }
 
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
+    private void compress(File targetFile) {
+        long start = System.currentTimeMillis();
+        File destinationFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "destination.jpg");
+        CompressUtils.newInstance().size(640).src(targetFile).dst(destinationFile).max(20 * 1024).crop(6f).thumbnail();
+        Log.e(TAG, "compress time : " + (System.currentTimeMillis() - start) + " ms, image file size : " + destinationFile.length());
     }
 
 }

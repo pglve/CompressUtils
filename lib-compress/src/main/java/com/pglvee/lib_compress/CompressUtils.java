@@ -3,9 +3,7 @@ package com.pglvee.lib_compress;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
-import android.os.Environment;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
@@ -85,12 +83,14 @@ public class CompressUtils {
     }
 
     public CompressUtils src(byte[] data) {
-        File file = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                System.currentTimeMillis() + ".jpg");
-        ImageUtils.byte2File(data, file);
-        this.tempInputFilePath = file.getPath();
-        this.inputFilePath = file.getPath();
+        try {
+            File file = File.createTempFile("temp" + System.currentTimeMillis(), ".jpg");
+            ImageUtils.byte2File(data, file);
+            this.tempInputFilePath = file.getPath();
+            this.inputFilePath = file.getPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return this;
     }
 
