@@ -51,10 +51,13 @@ public class ImageUtils {
     }
 
     static String getTempFile() {
-        File file = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile(),
-                "temp"+System.currentTimeMillis() + ".jpg");
-        return file.getAbsolutePath();
+        try {
+            File file = File.createTempFile("temp"+System.currentTimeMillis(), ".jpg");
+            return file.getAbsolutePath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static String bytesToHexString(byte[] src) {
