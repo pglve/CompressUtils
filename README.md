@@ -1,5 +1,5 @@
 # CompressUtils
-安卓压缩jpeg库：libjpeg-turbo2.0.5
+安卓压缩jpeg库：libjpeg-turbo2.1.3
 
 ## Dependency
 #### Add this in your root build.gradle file (not your module build.gradle file):
