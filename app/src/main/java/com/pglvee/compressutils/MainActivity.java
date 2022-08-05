@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private void compress(File targetFile) {
         long start = System.currentTimeMillis();
         File destinationFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "destination.jpg");
-        CompressUtils.newInstance().size(640).src(targetFile).dst(destinationFile).max(20 * 1024).crop(6f).thumbnail();
+        CompressUtils.newInstance().size(1920).src(targetFile).dst(destinationFile).max(200 * 1024).crop(6f).thumbnail();
         Log.e(TAG, "compress time : " + (System.currentTimeMillis() - start) + " ms, image file size : " + destinationFile.length());
     }
 
